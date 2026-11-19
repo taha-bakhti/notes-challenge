@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { NotebookMark } from "@/components/ui/notebook-mark";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -31,18 +32,31 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       setError("Authentication is unavailable. Check your connection and try again.");
     } finally { setPending(false); }
   }
-  return <main className="auth-shell"><section className="card w-full max-w-md">
-    <Link href="/login" className="brand">Private Notes</Link>
-    <h1 className="mt-8 text-3xl font-semibold tracking-tight">{signup ? "A space for your thoughts." : "Welcome back."}</h1>
-    <p className="mt-3 text-slate-600">{signup ? "Create an account to keep your notes in one place." : "Sign in to your personal notebook."}</p>
-    <form onSubmit={submit} className="mt-8 space-y-5">
-      <label className="field">Email<input name="email" type="email" autoComplete="email" required maxLength={254} disabled={pending} /></label>
-      <label className="field">Password<input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 8 : undefined} disabled={pending} /></label>
-      {signup && <p className="text-sm text-slate-600">Use at least 8 characters.</p>}
-      {error && <p role="alert" className="error">{error}</p>}
-      {message && <p role="status" className="notice">{message}</p>}
-      <button className="button w-full" disabled={pending}>{pending ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
-    </form>
-    <p className="mt-6 text-sm text-slate-600">{signup ? "Already have an account? " : "New here? "}<Link className="text-link" href={signup ? "/login" : "/signup"}>{signup ? "Sign in" : "Create an account"}</Link></p>
-  </section></main>;
+  return (
+    <main className="auth-shell">
+      <Link href="/login" className="brand auth-brand"><NotebookMark />Private Notes</Link>
+      <section className="card auth-card" aria-labelledby="auth-title">
+        <p className="eyebrow">Your personal notebook</p>
+        <h1 id="auth-title" className="auth-heading">{signup ? "Make room for your ideas." : "Welcome back."}</h1>
+        <p className="muted mt-3 text-sm">{signup ? "Create an account. Give your thoughts a place to land." : "Sign in to pick up where you left off."}</p>
+        <form onSubmit={submit} className="mt-8 space-y-5" aria-busy={pending}>
+          <label className="field">Email address
+            <input name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} disabled={pending} />
+          </label>
+          <label className="field">Password
+            <input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} placeholder={signup ? "Create a password" : "Enter your password"} required minLength={signup ? 8 : undefined} disabled={pending} aria-describedby={signup ? "password-hint" : undefined} />
+          </label>
+          {signup && <p id="password-hint" className="field-hint">Use at least 8 characters.</p>}
+          {error && <p role="alert" className="error">{error}</p>}
+          {message && <p role="status" className="notice">{message}</p>}
+          <button className="button w-full" disabled={pending}>{pending ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
+        </form>
+        <p className="muted mt-8 border-t border-[var(--line)] pt-6 text-center text-sm">
+          {signup ? "Already have an account? " : "New to Private Notes? "}
+          <Link className="text-link inline-flex min-h-11 items-center" href={signup ? "/login" : "/signup"}>{signup ? "Sign in" : "Create an account"}</Link>
+        </p>
+      </section>
+      <p className="auth-footer">A little space. A clearer mind.</p>
+    </main>
+  );
 }

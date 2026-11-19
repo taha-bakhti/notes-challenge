@@ -1,3 +1,4 @@
+import { NotebookMark } from "@/components/ui/notebook-mark";
 import type { Database } from "@/types/database";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -11,18 +12,57 @@ export default async function Notes() {
   // Intentionally unfiltered by user_id: the database applies the SELECT policy.
   const notes: Database["public"]["Tables"]["notes"]["Row"][] = [];
   const error = null; // Rehearsal: replace these two lines with the database query.
-  return <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
-    <header className="flex flex-wrap items-center justify-between gap-5 border-b border-slate-200 pb-7">
-      <div><p className="brand">Private Notes</p><p className="mt-2 break-all text-sm text-slate-600">{user.email}</p></div><SignOutButton />
-    </header>
-    <div className="my-10"><p className="eyebrow">YOUR NOTEBOOK</p><h1 className="mt-3 text-4xl font-semibold tracking-tight">Room for your thoughts.</h1><p className="mt-3 text-slate-600">A quiet place to collect ideas, one note at a time.</p></div>
-    <div className="grid items-start gap-8 lg:grid-cols-[340px_1fr]">
-      <NoteForm />
-      <section aria-label="Your notes"><h2 className="mb-5 text-xl font-semibold">Your notes</h2>
-        {error ? <div role="alert" className="card error">Your notes could not be loaded. Refresh the page to try again.</div> : notes?.length ? <ul className="space-y-4">{notes.map(note => <li key={note.id} className="card">
-          <article><h3 className="break-words text-xl font-semibold">{note.title}</h3><time className="mt-2 block text-sm text-slate-500" dateTime={note.created_at}>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(note.created_at))} UTC</time><p className="mt-5 whitespace-pre-wrap break-words leading-7 text-slate-700">{note.content}</p></article>
-        </li>)}</ul> : <div className="rounded-2xl border border-dashed border-slate-300 px-8 py-16 text-center"><h3 className="text-lg font-medium">Your notebook starts here.</h3><p className="mt-2 text-slate-600">Save your first note using the form.</p></div>}
-      </section>
+  return (
+    <div className="app-shell">
+      <a className="skip-link" href="#notebook">Skip to notebook</a>
+      <header className="app-header">
+        <p className="brand"><NotebookMark />Private Notes</p>
+        <div className="account"><p className="account-email">{user.email}</p><SignOutButton /></div>
+      </header>
+      <main id="notebook" tabIndex={-1}>
+        <div className="page-intro">
+          <p className="eyebrow">Your notebook</p>
+          <h1 className="page-title">Room for your thoughts.</h1>
+          <p className="muted mt-3">A quiet place to collect ideas, one note at a time.</p>
+        </div>
+        <div className="workspace">
+          <NoteForm />
+          <section aria-labelledby="notes-heading" className="min-w-0">
+            <div className="section-heading">
+              <h2 id="notes-heading" className="section-title">Your notes</h2>
+              {!error && <span className="note-count" aria-label={`${notes.length} notes`}>{notes.length}</span>}
+            </div>
+            {error ? (
+              <div role="alert" className="error">
+                <p className="font-semibold">Your notes couldn’t be loaded.</p>
+                <p className="mt-1">Refresh the page to try again.</p>
+                <a href="/notes" className="text-link mt-3 inline-flex min-h-11 items-center">Reload notebook</a>
+              </div>
+            ) : notes?.length ? (
+              <ul className="notes-grid">
+                {notes.map(note => (
+                  <li key={note.id}>
+                    <article className="card note-card">
+                      <h3 className="section-title">{note.title}</h3>
+                      <p className="muted mt-3 whitespace-pre-wrap text-sm leading-7">{note.content}</p>
+                      <time className="note-date" dateTime={note.created_at}>
+                        {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(note.created_at))} UTC
+                      </time>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="empty-state">
+                <NotebookMark />
+                <h3 className="section-title">Good ideas start with a note.</h3>
+                <p className="muted mt-2 text-sm">A passing thought, a useful detail, your next big idea. Keep it here.</p>
+                <a href="#note-title" className="text-link mt-5 inline-flex min-h-11 items-center text-sm">Write your first note <span aria-hidden="true" className="ml-2">→</span></a>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
     </div>
-  </main>;
+  );
 }
