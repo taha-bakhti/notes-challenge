@@ -1,36 +1,59 @@
 "use client";
-import { useActionState, useState } from "react";
-import { createNote, type NoteState } from "@/app/notes/actions";
-export function NoteForm() {
-  const [state, action, pending] = useActionState<NoteState, FormData>(createNote, {});
+import { useEffect, useRef } from "react";
+
+type NoteFormProps = {
+  action: (formData: FormData) => void;
+  pending: boolean;
+  error?: string;
+  title: string;
+  content: string;
+  onTitleChange: (value: string) => void;
+  onContentChange: (value: string) => void;
+  date: string | null;
+  active: boolean;
+};
+
+export function NoteForm({ action, pending, error, title, content, onTitleChange, onContentChange, date, active }: NoteFormProps) {
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = contentRef.current;
+    if (!textarea || !active) return;
+    function fitContent() {
+      if (!textarea) return;
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+    fitContent();
+    // Let the document scroll as one surface, including after viewport changes.
+    let previousWidth = textarea.parentElement?.clientWidth;
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width;
+      if (width !== previousWidth) {
+        previousWidth = width;
+        fitContent();
+      }
+    });
+    if (textarea.parentElement) observer.observe(textarea.parentElement);
+    return () => observer.disconnect();
+  }, [content, active]);
+
   return (
-    <section className="card" aria-labelledby="new-note-heading">
-      <h2 id="new-note-heading" className="section-title">New note</h2>
-      <p className="muted mt-2 text-sm">Something worth remembering.</p>
-      <form action={action} className="mt-6 space-y-5" aria-busy={pending}>
-        <NoteFields key={state.resetKey ?? "initial"} pending={pending} />
-        {state.error && <p role="alert" className="error">{state.error}</p>}
-        {state.success && <p role="status" className="notice">{state.success}</p>}
-        <button disabled={pending} className="button w-full">{pending ? "Saving…" : "Save note"}</button>
-      </form>
-    </section>
-  );
-}
-function NoteFields({ pending }: { pending: boolean }) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  // Controlled fields preserve drafts on failed actions; success remounts this component.
-  return (
-    <fieldset disabled={pending} className="min-w-0 space-y-5">
-      <legend className="sr-only">Note details — all fields required</legend>
-      <label className="field" htmlFor="note-title">Title
-        <input id="note-title" name="title" required maxLength={120} value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your note a title" aria-describedby="title-hint" />
-        <span id="title-hint" className="field-hint">Up to 120 characters.</span>
-      </label>
-      <label className="field" htmlFor="note-content">Note
-        <textarea id="note-content" name="content" required maxLength={10000} rows={7} value={content} onChange={e => setContent(e.target.value)} placeholder="Start writing…" aria-describedby="content-hint" />
-        <span id="content-hint" className="field-hint text-right tabular-nums">{content.length.toLocaleString("en-GB")} / 10,000 characters</span>
-      </label>
-    </fieldset>
+    <form id="new-note-form" action={action} className="writing-area note-editor" aria-label="New note" aria-busy={pending}>
+      {date && <time className="document-date" dateTime={date}>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(date))}</time>}
+      <fieldset disabled={pending} className="note-fields">
+        <legend className="sr-only">Note details — all fields required</legend>
+        <div className="editor-title-field" data-has-title={title.length > 0}>
+          <label className="sr-only" htmlFor="note-title">Title (required, up to 120 characters)</label>
+          <input id="note-title" data-writing-focus name="title" required maxLength={120} value={title} onChange={e => onTitleChange(e.target.value)} placeholder="Title" />
+          <span className="title-underline" aria-hidden="true">{title || "Title"}</span>
+        </div>
+        <div className="editor-content-field">
+          <label className="sr-only" htmlFor="note-content">Note (required, up to 10,000 characters)</label>
+          <textarea ref={contentRef} id="note-content" name="content" required maxLength={10000} rows={12} value={content} onChange={e => onContentChange(e.target.value)} placeholder="Start writing…" />
+        </div>
+      </fieldset>
+      {error && <p role="alert" className="error editor-feedback">{error}</p>}
+    </form>
   );
 }
