@@ -12,7 +12,10 @@ export async function createNote(_previous: NoteState, form: FormData): Promise<
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return { error: "Your session has expired. Sign in again to save your note." };
-    // No user_id: PostgreSQL's auth.uid() default supplies ownership, checked by RLS.
+    // TODO(notes): After the notes migration and INSERT RLS policy exist, replace
+    // the placeholder error with an authenticated insert of the validated title/content.
+    // The planned schema must default user_id to auth.uid() and enforce it with RLS;
+    // omit user_id from the payload. Revalidate and report success only after saving.
     const error = { message: "Rehearsal: implement INSERT here" };
     if (error) return { error: "Could not save your note. Please try again." };
     revalidatePath("/notes");
